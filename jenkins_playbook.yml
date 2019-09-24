@@ -57,6 +57,6 @@
       changed_when: false
       register: result
       
-   - name: print init password jenkins
+    - name: print init password jenkins
       debug:
         var: result.stdout
