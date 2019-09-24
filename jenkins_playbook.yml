@@ -1,0 +1,61 @@
+# This file will configure jenkins on remote server 
+
+---
+ - name: Play to install jenkins on target target_server
+   hosts: target_server
+   become: true
+   become_user: root
+   tasks:
+    - name: update basic packages
+      command: sudo apt-get -y clean && sudo apt-get -y && apt-get install
+    - name: install wget
+      apt:
+        name: wget
+        state: present
+    - name: install java
+      apt:
+        name: openjdk-8-jdk
+        state: present
+
+    - name: download jenkins repository
+      apt_repository:
+        repo: deb https://pkg.jenkins.io/debian binary/
+        state: present
+        update_cache: true
+
+    - name: import jenkins keys
+      apt_key:
+        url: https://pkg.jenkins.io/debian/jenkins.io.key
+        state: present
+        
+  
+    - name: install jenkins
+      apt:
+        deb: https://pkg.jenkins.io/debian-stable/binary/jenkins_2.150.1_all.deb
+        state: present
+        update_cache: true
+
+
+    - name: start jenkins
+      service:
+        name: jenkins
+        state: started
+
+    - name: enable jenkins
+      systemd:
+        name: jenkins
+        enabled: true
+
+    - name: wait for 30 seconds and then continue with play
+      wait_for:
+        timeout: 30
+
+
+    - name: cat password jenkins
+      shell: cat /var/lib/jenkins/secrets/initialAdminPassword
+      changed_when: false
+      register: result
+      
+   - name: print init password jenkins
+      debug:
+        var: result.stdout
