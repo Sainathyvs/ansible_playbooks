@@ -1,4 +1,5 @@
 # This file will configure jenkins on remote server 
+# Please change host name before deploy on to target server
 
 ---
  - name: Play to install jenkins on target target_server
