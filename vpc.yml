@@ -1,0 +1,113 @@
+#This file is use to create VPC on AWS cloud service.
+# Make sure before use this template fill all the variables O
+
+
+---
+  - name: Creating Vpc,subnets,IGW
+    hosts: target_server54
+    vars:
+      #vars for main.yaml
+      aws_access_key:
+      aws_secret_key:
+      region:
+
+      #vars for VPC
+      vpc_cidr:
+      vpc_name:
+
+      #subnets
+      subnet_name:
+      subnet_cidr:
+
+      #Internet gateway
+       igw_name:
+       securitygroup_name:
+       ec2_tag:
+
+      ##The local path to which we would save our EC2 Private Key
+      ec2_key_directory:
+      keypair_name:
+    # Total setup was on AWS (Amazon-web-services)
+   # Our Vpc will include (VPC, SUBNET, Router,Internet-gateway,Security_group,Ec2 instance)
+
+    tasks:
+      #Module to create vpc are (ec2_vpc_net)
+      - name: Create VPC
+        ec2_vpc_net:
+          name: "{{ vpc_name }}"
+          cidr_block: "{{ vpc_cidr}}"
+          region: "{{ region }}"
+          state: present
+          aws_secret_key: "{{ aws_secret_key }}"
+          aws_access_key: "{{ aws_access_key }}"
+        register: vpc
+      # Module to create subnet are ec2_vpc_subnet
+      - name: create subnet
+        ec2_vpc_subnet:
+          state: present
+          vpc_id: "{{ vpc_id }}"
+          region: "{{ region }}"
+          cidr: "{{ subnet_cidr }}"
+          aws_access_key: "{{ aws_access_key }}"
+          aws_secret_key: "{{ aws_secret_key }}"
+          map_public: yes
+          resource_tags:
+            name: "{{ subnet_name }}"
+        register: subnet
+   # Module to create IGW is ec2_vpc_igw
+     - name: create IGW
+       ec2_vpc_igw:
+         vpc_id: "{{ vpc_id }}"
+         region: "{{ region }}"
+         aws_access_key: "{{ aws_access_key }}"
+         aws_secret_key: "{{ aws_secret_key }}"
+         state: present
+         tags:
+         Name: "{{ igw_name }}"
+        register: igw
+
+        # Module to create routing traffic to IGW "ec2_vpc_route_table"
+
+      - name: Route igw
+        ec2_vpc_route_table:
+           vpc_id: "{{ vpc_id }}"
+           region: "{{ region }}"
+           aws_access_key: "{{ aws_access_key }}"
+           aws_secret_key: "{{ aws_secret_key }}"
+           subnets: "{{ subnet.subnet.id}}"
+           routes:
+             dest: 0.0.0.0/0
+             gateway_id: "{{ igw.gateway_id }}"
+
+       #Module to create SG is ec2_group
+      - name: Create SG
+        ec2_group:
+          name: Web DMZ
+          description: DMZ Security Group
+          vpc_id: "{{ vpc_id }}"
+          region: "{{ region }}"
+          aws_access_key: "{{ aws_access_key }}"
+          aws_secret_key: "{{ aws_secret_key }}"
+          rules:
+            - proto: tcp
+              ports: 80
+              cidr_ip: 0.0.0.0/0
+            - proto: tcp
+              ports: 22
+              cidr_ip: 0.0.0.0/0
+         register: security_group
+    # MOdule to create EC2 is ec2
+      - name: Create EC2
+        ec2:
+          image: ami-467ca739
+          wait: yes
+          instance_type: t2.micro
+          region: "{{ region }}"
+          group_id: "{{ security_group.group_id }}"
+          vpc_subnet_id: "{{ subnet.subnet.id }}"
+          key_name: mainkey
+          count_tag:
+             Name: apacheserver
+          exact_count: 1
+          aws_access_key: "{{ aws_access_key }}"
+          aws_secret_key: "{{ aws_secret_key }}"
