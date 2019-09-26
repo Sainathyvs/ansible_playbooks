@@ -1,0 +1,17 @@
+Connamds to run the ansible playbook 
+
+
+1. check ping command weather we can able to connect to target server
+  ansible -i <hostfile> -m ping <target_server>
+
+2. to run the playbook
+ ansible-playbook -i <hostfile> <playbook_file>
+
+3. add some steps to get more easier
+ ansible-playbook -i <hostfile> <playbook_file> -- step (will let you confirm each task you want to run and stop 
+                                                            execution whenever you want.)
+
+4. ctrl+c will stop the playbook execution 
+5. ctrl+a it will abort the playbook execution
+6. use fail module inside the playbook (this module will stop the playbook if tasks goes wrong )
+7. if you have a tags use command (ansible-playbook -i <hostfile> <playbook_file> --with-tags:<tag_name>
